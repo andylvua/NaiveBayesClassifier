@@ -251,7 +251,24 @@ naiveBayes <- setRefClass("naiveBayes",
 
                     score = function(X_test, y_test)
                     {
-                         # TODO
+                         right_predictions=0
+                         total_titles_count=nrow(test)
+                         for (row_index in 1:total_titles_count){
+                           #print(row)
+                           message <- test[row_index, "Body"]
+                           #print(message)
+                           result <- test[row_index, "Label"]
+                           if (predict(message)==result){
+                             right_predictions=right_predictions+1
+                           }
+                         }
+                         #}
+                         #test$prediction <- lapply(X=test[,c('Body')], MARGIN=1, FUN=self$predict)
+                         #View(test)
+                         
+                         #correct_values <- nrow(test.which(test$Label==test$prediction))
+                         #return(correct_values/nrow(test))
+                         return(right_predictions/total_titles_count)
                     }
 ))
 
