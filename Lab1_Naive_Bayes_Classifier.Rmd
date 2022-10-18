@@ -218,21 +218,12 @@ naiveBayes <- setRefClass("naiveBayes",
 
                     predict = function(message)
                     {
-                        number_of_fake_news <- nrow(data %>% filter(Label=="fake"))
-                        number_of_credible_news <- nrow(data %>% filter(Label=="credible"))
-                        fake_news_prob <- number_of_fake_news/(number_of_fake_news + number_of_credible_news)
-                        credible_news_prob <- number_of_credible_news/(number_of_fake_news + number_of_credible_news)
-
                         message <- tolower(message)
                         entries <- strsplit(message, split=" ")[[1]]
                         entries <- entries[!grepl("[[:punct:]]", entries)]
                         entries <- entries[!(entries %in% stop_words)]
 
-                        fake_news_word_count <- sum(fake_data$n)
-                        credible_news_word_count <- sum(credible_data$n)
-
                         result<-1
-                        total_word_count <- nrow(data)
 
                         for (word in entries) {
                             number_of_entries_fake <- ifelse(
@@ -253,6 +244,7 @@ naiveBayes <- setRefClass("naiveBayes",
                         }
 
                         result<-result*(fake_news_prob/credible_news_prob)
+
                         if (result > 1) {
                             return("fake")
                         } else {
@@ -262,19 +254,14 @@ naiveBayes <- setRefClass("naiveBayes",
 
                     score = function(test)
                     {
-                         right_predictions <- 0
-                         total_titles_count <- nrow(test)
+                         result <- data.frame(test)
+                         result$PredictedLabel <- apply(result["Body"],MARGIN=1, .self$predict)
+                         View(result)
 
-                         for (row_index in 1:total_titles_count){
-                           message <- test[row_index, "Body"]
-                           result <- test[row_index, "Label"]
+                         write.csv(result,'result.csv')
+                         correct_values <- nrow(result %>% filter(result$Label==result$PredictedLabel))
 
-                           if (predict(message)==result){
-                             right_predictions <- right_predictions+1
-                           }
-                         }
-
-                         return(right_predictions/total_titles_count)
+                         return(correct_values/nrow(result))
                     }
 ))
 model <- naiveBayes()
