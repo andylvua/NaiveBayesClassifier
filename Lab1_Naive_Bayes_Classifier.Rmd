@@ -289,13 +289,38 @@ ggplot(confusion_data, aes(x = Actual, y = Predicted, fill = Freq)) +
 ```
 
 
-## Conclusions
+## Algorithm
 
-Summarize your work by explaining in a few sentences the points listed
-below.
+#### Steps taken to perform the task :
+- Analyze the dataset, process it to turn into a bag-of-words
+- Use Bayes' formula to try to predict the class of a message
+- Calculate the probability for the bag-of-word to be in fake class
+- Calculate the probability for the bag-of-word to be in credible class
+- Compare them
+- Compute the success of the predictions
+- Calculate the metrics to evaluate the effectiveness of the classifier
+- Form the confusion matrix to represent the effectiveness of the method
+- Form the diagram and visualize the statistics
 
--   Describe the method implemented in general. Show what are
-    mathematical foundations you are basing your solution on.
--   List pros and cons of the method. This should include the
-    limitations of your method, all the assumption you make about the
-    nature of your data etc.
+## Conclusion
+
+#### Metrics:
+**Accuracy : 0.9289**
+
+**Precision : 0.97**
+
+**Recall : 0.90**
+
+**F1 score : 0.93**
+
+
+#### Pros of using Naive Bayes approach :
+-   Simple and easy to implement. Naive Bayes uses basic probability formulas and concepts and clear algorithm.
+-   Comparatively fast by the assumption that the features are independent. That is one of the reasons why Naive Distribution is used on big datasets.
+
+#### Cons of using Naive Bayes approach :
+-   Does not work for non-independent features. The count of datasets having completely independent features is reaching zero, so we can use Naive Bayes only when speed is more praised than the accuracy
+
+In the dataset given, we actually assumed that there was no correlation between the word frequency and our method still had
+good results. However, it could be a good practise e.g. to consider the dependencies of the word appearance. Still, Naive Bayes has pretty good classification accuracy.
+
