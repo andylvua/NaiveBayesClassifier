@@ -187,7 +187,14 @@ naiveBayes <- setRefClass("naiveBayes",
        fields = list(
          data = "data.frame",
          fake_data = "data.frame",
-         credible_data = "data.frame"
+         credible_data = "data.frame",
+         number_of_fake_news = "numeric",
+         number_of_credible_news = "numeric",
+         fake_news_prob = "numeric",
+         credible_news_prob = "numeric",
+         fake_news_word_count = "numeric",
+         credible_news_word_count = "numeric",
+         total_word_count = "numeric"
        ),
 
        methods = list(
@@ -197,8 +204,16 @@ naiveBayes <- setRefClass("naiveBayes",
                         fake_data <<- data %>% filter(Label=="fake") %>% count(splitted, sort=TRUE)
                         credible_data <<- data %>% filter(Label=="credible") %>% count(splitted, sort=TRUE)
 
-                        fake_data <<- fake_data
-                        credible_data <<- credible_data
+                        number_of_fake_news <<- nrow(train %>% filter(Label=="fake"))
+                        number_of_credible_news <<- nrow(train %>% filter(Label=="credible"))
+
+                        fake_news_prob <<- number_of_fake_news/(number_of_fake_news + number_of_credible_news)
+                        credible_news_prob <<- number_of_credible_news/(number_of_fake_news + number_of_credible_news)
+
+                        fake_news_word_count <<- sum(fake_data$n)
+                        credible_news_word_count <<- sum(credible_data$n)
+
+                        total_word_count <<- nrow(data %>% distinct(splitted))
                     },
 
                     predict = function(message)
