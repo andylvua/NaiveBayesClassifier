@@ -75,10 +75,10 @@ classifier works.
 ```{r}
 # here goes a list of recommended libraries,
 # though you may install other ones if they are needed
-install.packages("tidytext")
-install.packages("readr")
-install.packages("dplyr")
-install.packages("ggplot2")
+#install.packages("tidytext")
+#install.packages("readr")
+#install.packages("dplyr")
+#install.packages("ggplot2")
 library(tidytext)
 library(readr)
 library(dplyr)
@@ -200,7 +200,6 @@ naiveBayes <- setRefClass("naiveBayes",
 
                         fake_data <<- fake_data
                         credible_data <<- credible_data
-                        View(fake_data)
                     },
                     
                     predict = function(message)
@@ -208,12 +207,9 @@ naiveBayes <- setRefClass("naiveBayes",
                         number_of_fake_news <- nrow(data %>% filter(Label=="fake"))
                         number_of_credible_news <- nrow(data %>% filter(Label=="credible"))
 
-                        fake_news_prob <- number_of_fake_news/(number_of_fake_news + number_of_credible_news)
-                        credible_news_prob <- number_of_credible_news/(number_of_fake_news + number_of_credible_news)
+                        result = 1
 
                         entries <- strsplit(message, split=" ")[[1]]
-                        entries <- entries[!grepl("[[:digit:]]", entries)]
-                        entries <- entries[!grepl("[[:punct:]]", entries)]
                         entries <- entries[!(entries %in% stop_words)]
 
                         fake_conditional_prob <- 1
@@ -231,6 +227,7 @@ naiveBayes <- setRefClass("naiveBayes",
 
                             fake_word_conditional_prob <- (number_of_entries_fake + 1)/
                               (fake_news_word_count + total_word_count)
+                            
                             fake_conditional_prob <- fake_conditional_prob * fake_word_conditional_prob
 
                             number_of_entries_credible <- ifelse(
@@ -240,33 +237,35 @@ naiveBayes <- setRefClass("naiveBayes",
                             credible_word_conditional_prob <- (number_of_entries_credible + 1)/
                               (credible_news_word_count + total_word_count)
                             credible_conditional_prob <- credible_conditional_prob * credible_word_conditional_prob
+                              result = result * (credible_word_conditional_prob / fake_word_conditional_prob)
                         }
 
-                        fake_bayes_value <- fake_news_prob * fake_conditional_prob
-                        credible_bayes_value <- credible_news_prob * credible_conditional_prob
-
-                        if (fake_bayes_value > credible_bayes_value) {
-                            return("fake")
-                        } else {
+                        #fake_bayes_value <- fake_news_prob * fake_conditional_prob
+                        #credible_bayes_value <- credible_news_prob * credible_conditional_prob
+                        
+                        
+                        if (result > 1) {
                             return("credible")
+                        } else {
+                            return("fake")
                         }
                     },
 
-                    score = function(X_test, y_test)
+                    score = function(test)
                     {
-                         right_predictions <- 0
-                         total_titles_count <- nrow(test)
+                         right_predictions = 0
+                         total_titles_count=nrow(test)
                          for (row_index in 1:total_titles_count){
                            #print(row)
                            message <- test[row_index, "Body"]
                            #print(message)
                            result <- test[row_index, "Label"]
                            if (predict(message)==result){
-                             right_predictions <- right_predictions+1
+                             right_predictions=right_predictions+1
                            }
                          }
                          #}
-                         #test$prediction <- lapply(X=test[,c('Body')], MARGIN=1, FUN=self$predict)
+                        # test$prediction <- lapply(X=test[,c('Body')], function(x) return(predict(x)))
                          #View(test)
                          
                          #correct_values <- nrow(test.which(test$Label==test$prediction))
@@ -277,8 +276,9 @@ naiveBayes <- setRefClass("naiveBayes",
 
 model <- naiveBayes()
 model$fit(tidy_text)
-prediction <- model$predict("Trump is a good president")
-print(prediction)
+print(model$score(test))
+
+
 ```
 ```
 
