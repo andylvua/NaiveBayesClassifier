@@ -38,45 +38,14 @@ for more detailed explanations.
 
 ## Data description
 
-There are 5 datasets uploaded on the cms.
-
-To determine your variant, take your team number from the list of teams
-on cms and take *mod 5* - this is the number of your data set.
-
--   **0 - authors** This data set consists of citations of three famous
-    writers: Edgar Alan Poe, Mary Wollstonecraft Shelley and HP
-    Lovecraft. The task with this data set is to classify a piece of
-    text with the author who was more likely to write it.
-
--   **1 - discrimination** This data set consists of tweets that have
-    discriminatory (sexism or racism) messages or of tweets that are of
-    neutral mood. The task is to determine whether a given tweet has
-    discriminatory mood or does not.
-
 -   **2 - fake news** This data set contains data of American news: a
     headline and an abstract of the article. Each piece of news is
     classified as fake or credible. The task is to classify the news
     from test.csv as credible or fake.
 
--   **3 - sentiment** All the text messages contained in this data set
-    are labeled with three sentiments: positive, neutral or negative.
-    The task is to classify some text message as the one of positive
-    mood, negative or neutral.
 
--   **4 - spam** This last data set contains SMS messages classified as
-    spam or non-spam (ham in the data set). The task is to determine
-    whether a given message is spam or non-spam.
 
-Each data set consists of two files: *train.csv* and *test.csv*. The
-first one you will need find the probabilities distributions for each of
-the features, while the second one is needed for checking how well your
-classifier works.
-
-```{r}
-install.packages("tidytext")
-install.packages("readr")
-install.packages("dplyr")
-install.packages("ggplot2")
+```{r Libraries loading, message=FALSE, warning=FALSE, results='hide'}
 library(tidytext)
 library(readr)
 library(dplyr)
@@ -88,19 +57,19 @@ library(ggplot2)
 -   The first step is data pre-processing, which includes removing
     punctuation marks and stop words
 
--   represent each message as a bag-of-words
+-   Represent each message as a bag-of-words
 
--   using the training set, calculate all the conditional probabilities
+-   Using the training set, calculate all the conditional probabilities
     in formula (1)
 
--   use those to predict classes for messages in the test set
+-   Use those to predict classes for messages in the test set
 
--   evaluate effectiveness of the classifier by calculating the
+-   Evaluate effectiveness of the classifier by calculating the
     corresponding metrics
 
--   shortly summarize your work
+-   Shortly summarize your work
 
--   do not forget to submit both the (compiled) Rmd source file and the .html
+-   Do not forget to submit both the (compiled) Rmd source file and the .html
     output
 
 ### Data pre-processing
@@ -111,51 +80,34 @@ library(ggplot2)
     etc. to affect your probabilities distributions, so it is a wise
     decision to get rid of them. Find list of stop words in the cms
     under the lab task.
--   Represent each test message as its bag-of-words. Here:
-    <https://machinelearningmastery.com/gentle-introduction-bag-words-model/>
-    you can find general introduction to the bag-of-words model and
-    examples on to create it.
--   It is highly recommended to get familiar with R dataframes, it would
-    make the work much easier to do.
--   Useful links:
-    -   <https://steviep42.github.io/webscraping/book/bagofwords.html#tidytext> -
-        example of using *tidytext* to count frequencies of the words.
-    -   Basics of Text Mining in R:
-        <http://rstudio-pubs-static.s3.amazonaws.com/256588_57b585da6c054349825cba46685d8464.html>
-        . Note that it also includes an example on how to create a bag
-        of words from your text document.
+-   Represent each test message as its bag-of-words.
 
-```{r}
-list.files(getwd())
-list.files("data/2-fake_news")
-```
 
-```{r}
+```{r Load datasets}
 test_path <- "data/2-fake_news/test.csv"
 train_path <- "data/2-fake_news/train.csv"
 
-stop_words_file <- read_file("stop_words.txt")
-# https://stackoverflow.com/questions/27195912/why-does-strsplit-return-a-list
-stop_words <- strsplit(stop_words_file, split='\n')
-stop_words <- stop_words[[1]]
-View(stop_words)
-```
-
-```{r}
 train <- read.csv(file = train_path, stringsAsFactors = FALSE)
 test <- read.csv(file = test_path, stringsAsFactors = FALSE)
 ```
 
-```{r}
+```{r Load stopwords}
+stop_words_file <- read_file("stop_words.txt")
+
+stop_words <- strsplit(stop_words_file, split='\n')
+stop_words <- stop_words[[1]]
+```
+
+```{r TidyText}
 tidy_text <- unnest_tokens(train, 'splitted', 'Body', token="words", to_lower = TRUE) %>%
              filter(!splitted %in% stop_words)
-
-tidy_text %>% count(splitted, sort=TRUE)
 ```
 
 ### Data visualization
 
-```{r}
+Top words in the dataset
+
+```{r Words frequencies, message=FALSE, warning=FALSE}
 fake_news <- tidy_text %>%
              filter(Label == "fake") %>%
              count(splitted, sort=TRUE) %>%
@@ -177,9 +129,23 @@ ggplot(credible_news, aes(x = n, y = reorder(splitted, n))) +
     theme_minimal()
 ```
 
+Chart representation of classes distribution
+
+```{r Classes distibution, message=FALSE, warning=FALSE}
+pie_chart <- tidy_text %>%
+             count(Label, sort=TRUE)
+
+ggplot(pie_chart, aes(x = "", y = n, fill = Label)) +
+    geom_bar(width = 1, stat = "identity") +
+    coord_polar("y", start = 0) +
+    labs(x = "", y = "Count", title = "Classes distribution") +
+    scale_fill_manual(aesthetics = "fill", values = c("darkolivegreen2", "coral1")) +
+    theme_minimal()
+```
+
 ## Classifier implementation
 
-```{r}
+```{r Classifier implementation}
 naiveBayes <- setRefClass("naiveBayes",
 
        fields = list(
@@ -254,7 +220,6 @@ naiveBayes <- setRefClass("naiveBayes",
                     {
                          result <- data.frame(test)
                          result$PredictedLabel <- apply(result["Body"], MARGIN=1, .self$predict)
-                         View(result)
 
                          write.csv(result,'result.csv')
                          correct_values <- nrow(result %>% filter(result$Label == result$PredictedLabel))
@@ -265,8 +230,6 @@ naiveBayes <- setRefClass("naiveBayes",
 
 model <- naiveBayes()
 model$fit(tidy_text)
-
-print(model$score(test))
 ```
 
 ## Effectiveness of classifier
@@ -275,47 +238,44 @@ All calculations can be done using the `result.csv` file. The accuracy of the cl
 
 Here we will use the actual and predicted labels to calculate all the metrics.
 
-```{r}
+```{r Effectiveness of classifier}
 result <- read.csv("result.csv", stringsAsFactors = TRUE)
-View(result)
 ```
 
-```{r}
+```{r Confusion matrix}
 confusion_matrix <- table(result$Label, result$PredictedLabel, dnn = c("Actual", "Predicted"))
-
-View(confusion_matrix)
 ```
 
-```{r}
+```{r Accuracy}
 accuracy <- sum(diag(confusion_matrix))/sum(confusion_matrix)
 print(accuracy)
 ```
 
-```{r}
+```{r Precision}
 precision <- confusion_matrix[1,1]/sum(confusion_matrix[,1])
 print(precision)
 ```
 
-```{r}
+```{r Recall}
 recall <- confusion_matrix[1,1]/sum(confusion_matrix[1,])
 print(recall)
 ```
 
-```{r}
+```{r F1 score}
 f1_score <- 2 * (precision * recall)/(precision + recall)
 print(f1_score)
 ```
 
 Or, we can use the `caret` package to calculate all the metrics.
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(caret)
 confusionMatrix(result$Label, result$PredictedLabel)
 ```
 
 Visualization of the confusion matrix:
 
-```{r}
+```{r Confusion matrix visualization}
 library(ggplot2)
 
 confusion_data <- as.data.frame(confusion_matrix)
@@ -324,7 +284,7 @@ ggplot(confusion_data, aes(x = Actual, y = Predicted, fill = Freq)) +
     geom_tile() +
     geom_text(aes(label = Freq), size = 3, color = "white") +
     labs(x = "Actual", y = "Predicted", title = "Confusion Matrix") +
-    scale_fill_gradient(low = "grey", high = "green", name = "Frequency") +
+    scale_fill_gradient(low = "grey", high = "darkgreen", name = "Frequency") +
     theme_minimal()
 ```
 
