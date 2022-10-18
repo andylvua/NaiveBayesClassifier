@@ -73,8 +73,6 @@ the features, while the second one is needed for checking how well your
 classifier works.
 
 ```{r}
-# here goes a list of recommended libraries,
-# though you may install other ones if they are needed
 install.packages("tidytext")
 install.packages("readr")
 install.packages("dplyr")
@@ -270,14 +268,66 @@ model$fit(tidy_text)
 
 print(model$score(test))
 ```
+
+## Effectiveness of classifier
+
+All calculations can be done using the `result.csv` file. The accuracy of the classifier is 93%.
+
+Here we will use the actual and predicted labels to calculate all the metrics.
+
+```{r}
+result <- read.csv("result.csv", stringsAsFactors = TRUE)
+View(result)
 ```
 
-## Measure effectiveness of your classifier
+```{r}
+confusion_matrix <- table(result$Label, result$PredictedLabel, dnn = c("Actual", "Predicted"))
 
--   Note that accuracy is not always a good metric for your classifier.
-    Look at precision and recall curves, F1 score metric.
--   Visualize them.
--   Show failure cases.
+View(confusion_matrix)
+```
+
+```{r}
+accuracy <- sum(diag(confusion_matrix))/sum(confusion_matrix)
+print(accuracy)
+```
+
+```{r}
+precision <- confusion_matrix[1,1]/sum(confusion_matrix[,1])
+print(precision)
+```
+
+```{r}
+recall <- confusion_matrix[1,1]/sum(confusion_matrix[1,])
+print(recall)
+```
+
+```{r}
+f1_score <- 2 * (precision * recall)/(precision + recall)
+print(f1_score)
+```
+
+Or, we can use the `caret` package to calculate all the metrics.
+
+```{r}
+library(caret)
+confusionMatrix(result$Label, result$PredictedLabel)
+```
+
+Visualization of the confusion matrix:
+
+```{r}
+library(ggplot2)
+
+confusion_data <- as.data.frame(confusion_matrix)
+
+ggplot(confusion_data, aes(x = Actual, y = Predicted, fill = Freq)) +
+    geom_tile() +
+    geom_text(aes(label = Freq), size = 3, color = "white") +
+    labs(x = "Actual", y = "Predicted", title = "Confusion Matrix") +
+    scale_fill_gradient(low = "grey", high = "green", name = "Frequency") +
+    theme_minimal()
+```
+
 
 ## Conclusions
 
