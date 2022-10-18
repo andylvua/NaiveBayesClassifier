@@ -75,10 +75,10 @@ classifier works.
 ```{r}
 # here goes a list of recommended libraries,
 # though you may install other ones if they are needed
-#install.packages("tidytext")
-#install.packages("readr")
-#install.packages("dplyr")
-#install.packages("ggplot2")
+install.packages("tidytext")
+install.packages("readr")
+install.packages("dplyr")
+install.packages("ggplot2")
 library(tidytext)
 library(readr)
 library(dplyr)
@@ -104,7 +104,7 @@ library(ggplot2)
 
 -   do not forget to submit both the (compiled) Rmd source file and the .html
     output
-    
+
 ### Data pre-processing
 
 -   Read the *.csv* data files.
@@ -149,14 +149,13 @@ test <- read.csv(file = test_path, stringsAsFactors = FALSE)
 ```
 
 ```{r}
-tidy_text <- unnest_tokens(train, 'splitted', 'Body', token="words") %>%
+tidy_text <- unnest_tokens(train, 'splitted', 'Body', token="words", to_lower = TRUE) %>%
              filter(!splitted %in% stop_words)
 
 tidy_text %>% count(splitted, sort=TRUE)
 ```
 
 ### Data visualization
-
 
 ```{r}
 fake_news <- tidy_text %>%
@@ -201,23 +200,23 @@ naiveBayes <- setRefClass("naiveBayes",
                         fake_data <<- fake_data
                         credible_data <<- credible_data
                     },
-                    
+
                     predict = function(message)
                     {
                         number_of_fake_news <- nrow(data %>% filter(Label=="fake"))
                         number_of_credible_news <- nrow(data %>% filter(Label=="credible"))
+                        fake_news_prob <- number_of_fake_news/(number_of_fake_news + number_of_credible_news)
+                        credible_news_prob <- number_of_credible_news/(number_of_fake_news + number_of_credible_news)
 
-                        result = 1
-
+                        message <- tolower(message)
                         entries <- strsplit(message, split=" ")[[1]]
+                        entries <- entries[!grepl("[[:punct:]]", entries)]
                         entries <- entries[!(entries %in% stop_words)]
-
-                        fake_conditional_prob <- 1
-                        credible_conditional_prob <- 1
 
                         fake_news_word_count <- sum(fake_data$n)
                         credible_news_word_count <- sum(credible_data$n)
 
+                        result<-1
                         total_word_count <- nrow(data)
 
                         for (word in entries) {
@@ -227,62 +226,55 @@ naiveBayes <- setRefClass("naiveBayes",
 
                             fake_word_conditional_prob <- (number_of_entries_fake + 1)/
                               (fake_news_word_count + total_word_count)
-                            
-                            fake_conditional_prob <- fake_conditional_prob * fake_word_conditional_prob
 
                             number_of_entries_credible <- ifelse(
                               word %in% credible_data$splitted,
                               credible_data %>% filter(splitted==word) %>% pull(n), 0)
 
-                            credible_word_conditional_prob <- (number_of_entries_credible + 1)/
-                              (credible_news_word_count + total_word_count)
-                            credible_conditional_prob <- credible_conditional_prob * credible_word_conditional_prob
-                              result = result * (credible_word_conditional_prob / fake_word_conditional_prob)
+                           credible_word_conditional_prob <- (number_of_entries_credible + 1)/
+                             (credible_news_word_count + total_word_count)
+
+                           result<-result*(fake_word_conditional_prob/credible_word_conditional_prob)
                         }
 
-                        #fake_bayes_value <- fake_news_prob * fake_conditional_prob
-                        #credible_bayes_value <- credible_news_prob * credible_conditional_prob
-                        
-                        
+                        result<-result*(fake_news_prob/credible_news_prob)
                         if (result > 1) {
-                            return("credible")
-                        } else {
                             return("fake")
+                        } else {
+                            return("credible")
                         }
                     },
 
                     score = function(test)
                     {
-                         right_predictions = 0
-                         total_titles_count=nrow(test)
+                         right_predictions <- 0
+                         total_titles_count <- nrow(test)
+
                          for (row_index in 1:total_titles_count){
-                           #print(row)
                            message <- test[row_index, "Body"]
-                           #print(message)
                            result <- test[row_index, "Label"]
+
                            if (predict(message)==result){
-                             right_predictions=right_predictions+1
+                             right_predictions <- right_predictions+1
                            }
                          }
-                         #}
-                        # test$prediction <- lapply(X=test[,c('Body')], function(x) return(predict(x)))
-                         #View(test)
-                         
-                         #correct_values <- nrow(test.which(test$Label==test$prediction))
-                         #return(correct_values/nrow(test))
+
                          return(right_predictions/total_titles_count)
                     }
 ))
-
 model <- naiveBayes()
 model$fit(tidy_text)
+#prediction <- model$predict("Will")
+#print(prediction)
+#result <- data.frame(test)
+#result$prediction <- apply(result["Body"],MARGIN=1, model$predict)
+#View(result)
+                         #}
 print(model$score(test))
-
-
-```
 ```
 
 ## Measure effectiveness of your classifier
+
 -   Note that accuracy is not always a good metric for your classifier.
     Look at precision and recall curves, F1 score metric.
 -   Visualize them.
