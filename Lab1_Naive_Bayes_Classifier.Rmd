@@ -211,6 +211,8 @@ naiveBayes <- setRefClass("naiveBayes",
                         credible_news_prob <- number_of_credible_news/(number_of_fake_news + number_of_credible_news)
 
                         entries <- strsplit(message, split=" ")[[1]]
+                        entries <- entries[!grepl("[[:digit:]]", entries)]
+                        entries <- entries[!grepl("[[:punct:]]", entries)]
                         entries <- entries[!(entries %in% stop_words)]
 
                         fake_conditional_prob <- 1
